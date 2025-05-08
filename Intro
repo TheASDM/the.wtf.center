@@ -1,0 +1,40 @@
+ ______  __ __    ___      __    __  ______  _____         __    ___  ____   ______    ___  ____  
+|      ||  |  |  /  _]    |  |__|  ||      ||     |       /  ]  /  _]|    \ |      |  /  _]|    \ 
+|      ||  |  | /  [_     |  |  |  ||      ||   __|      /  /  /  [_ |  _  ||      | /  [_ |  D  )
+|_|  |_||  _  ||    _]    |  |  |  ||_|  |_||  |_       /  /  |    _]|  |  ||_|  |_||    _]|    / 
+  |  |  |  |  ||   [_     |  `  '  |  |  |  |   _]     /   \_ |   [_ |  |  |  |  |  |   [_ |    \ 
+  |  |  |  |  ||     |     \      /   |  |  |  |       \     ||     ||  |  |  |  |  |     ||  .  \
+  |__|  |__|__||_____|      \_/\_/    |__|  |__|        \____||_____||__|__|  |__|  |_____||__|\_|
+
+91 days. 
+
+A lot can happen when you are autistic and find a new hobby.
+
+On Februrary 12, 2025 I didn't know what a NAS was, but I had 5tbs from Google, a couple of TBs from DropBox, and probably 5 more across other platforms that I was paying for. I decided it was time to get rid of all but one and consolidate. Instead of that, I spent a total of about $1400 on a DX4800+ and 4x 12TB Seagate NAS drives and by March 1, 2025 I had 36TB in something called RAID5 and was vaguely aware of something called Docker.
+
+Today is May 7, 2025. Here is my setup:
+
+  OPNSense Box
+  SuperMicro X10SLH-N6-ST031 1U Server
+  16GB DDR3 SDRAM (Chipkill)
+  3.5Ghz Quad Core
+  6x 10GB Ethernet RJ45 Copper Onboard NIC, Dual 1GB Ethernet PORT with Shared IPMI
+  
+  DXP4800+ Nas
+  4x Seagate Ironwolf 12tb HDDs in RAID5
+  Docker Containerization including *arr, Manyfold, NginX Reverse Proxy
+  NOTE: Currently running UGOS Pro OS, but probably switching to either TrueNAS or Unraid soon
+  
+  Dell EMC PowerEdge R640 8 Bay SFF 1U (pre-SuperMicro this had a PFSense VM on it)
+  Intel Platinum 8164 2.0 ghz-26 core/52 threads (2)
+  128gb (4x32gb) DDR4 2133mhz
+  64gb (2x32gb) DDR4 DDR4 2400MHz PC4-19200
+  Dell PERC H730 RAID Controller
+  Connect X-4 with 2 25gb NIC
+  Dell 960gb SATA SSD (2x in RAID1)
+  Samsung 870 EVO 500gb SATA SSD (6x RAID0)
+  Dell 750w power supply (2x)
+
+  Seedbox remotely hosted with 18TB of storage and 10gbps connection
+
+Things have progressed and I have done so many wipes and retarts that it is finally time to start documenting what I do for shortcuts.
