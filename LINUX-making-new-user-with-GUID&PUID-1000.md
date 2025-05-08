@@ -1,7 +1,3 @@
-Okay, here's that information formatted in a similar Markdown style, suitable for your homelab Git repo.
-
----
-
 ## Creating a User with Specific UID/GID on Proxmox VE
 
 This guide outlines the process for creating a new user on a Proxmox VE (PVE) host with a specific User ID (UID) and Group ID (GID), typically to match ownership on an NFS share or for consistent permissions across systems. In this example, we aim for UID `1000` and GID `1000`.
