@@ -36,7 +36,7 @@ If you make any changes to `/etc/ssh/sshd_config`, restart the SSH service:
 ```bash
 sudo systemctl restart sshd
 ```
-or
+or  
 ```bash
 sudo systemctl restart ssh
 ```
