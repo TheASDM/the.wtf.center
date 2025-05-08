@@ -117,10 +117,12 @@ The container needs the user-space components of the NVIDIA driver that match th
     # (Performed as root within the container for this setup)
     ```
 
-2.  **Update Package Lists and Upgrade:**
+2.  **Update Package Lists and Upgrade and Install gcc, make for Dependencies**
     ```bash
     # Inside LXC Container (as root)
     apt update && apt upgrade -y
+    apt install gcc
+    apt install make
     ```
 
 3.  **Download the Same NVIDIA Driver Version as on the Host:**
