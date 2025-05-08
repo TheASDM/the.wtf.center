@@ -120,4 +120,133 @@ The container needs the user-space components of the NVIDIA driver that match th
 2.  **Update Package Lists and Upgrade:**
     ```bash
     # Inside LXC Container (as root)
-    apt update &&
+    apt update && apt upgrade -y
+    ```
+
+3.  **Download the Same NVIDIA Driver Version as on the Host:**
+    Ensure you download the *exact same* driver version that was installed on the PVE host.
+    ```bash
+    # Inside LXC Container (as root)
+    # Replace with the actual downloaded filename matching the host's driver
+    wget https://us.download.nvidia.com/XFree86/Linux-x86_64/YOUR_DRIVER_VERSION/NVIDIA-Linux-x86_64-YOUR_DRIVER_VERSION.run
+    ```
+
+4.  **Make the Installer Executable and Run It (User-Space Only):**
+    ```bash
+    # Inside LXC Container (as root)
+    chmod +x ./NVIDIA-Linux-x86_64-YOUR_DRIVER_VERSION.run
+    ./NVIDIA-Linux-x86_64-YOUR_DRIVER_VERSION.run --no-kernel-module
+    ```
+    *   `--no-kernel-module`: This is **critical**. It tells the installer to only install the user-space libraries and tools, not to attempt to build or install kernel modules (which are already provided by the host).
+    *   During installation, answer YES to installing 32-bit compatibility libraries if prompted and desired.
+
+5.  **Verify Driver Access Inside the Container:**
+    ```bash
+    # Inside LXC Container (as root)
+    nvidia-smi
+    ```
+    If successful, you should see the same `nvidia-smi` output as on the host, indicating the container can communicate with the GPU.
+
+---
+
+### Step 4: Install NVIDIA Container Toolkit for Docker
+
+To allow Docker containers to utilize the NVIDIA GPU, the NVIDIA Container Toolkit is required. Older methods (`nvidia-docker2`) are deprecated.
+
+1.  **Deprecated Methods (For Reference - Do Not Use):**
+    ```
+    ## Deprecated ##
+    # distribution=$(. /etc/os-release;echo $ID$VERSION_ID)
+    # curl -s -L https://nvidia.github.io/nvidia-docker/gpgkey | apt-key add -
+    # curl -s -L https://nvidia.github.io/nvidia-docker/$distribution/nvidia-docker.list | tee /etc/apt/sources.list.d/nvidia-docker.list
+    # apt update && apt install -y nvidia-docker2
+    # systemctl restart docker
+    #
+    # ALSO DEPRECATED PACKAGES:
+    # libnvidia-container1
+    # libnvidia-container-tools
+    ## DEPRECATED ##
+    ```
+
+2.  **Install NVIDIA Container Toolkit (Current Method as of May 2025):**
+    Source: `https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html`
+    ```bash
+    # Inside LXC Container (as root)
+    curl -fsSL https://nvidia.github.io/libnvidia-container/gpgkey | sudo gpg --dearmor -o /usr/share/keyrings/nvidia-container-toolkit-keyring.gpg \
+    && curl -s -L https://nvidia.github.io/libnvidia-container/stable/deb/nvidia-container-toolkit.list | \
+    sed 's#deb https://#deb [signed-by=/usr/share/keyrings/nvidia-container-toolkit-keyring.gpg] https://#g' | \
+    sudo tee /etc/apt/sources.list.d/nvidia-container-toolkit.list
+
+    # The official docs might include enabling experimental packages if needed.
+    # The original notes included this, uncomment if stable doesn't work or if a feature is needed:
+    # sed -i -e '/experimental/ s/^#//g' /etc/apt/sources.list.d/nvidia-container-toolkit.list
+    
+    sudo apt-get update
+    sudo apt-get install -y nvidia-container-toolkit
+    ```
+
+3.  **Configure Docker to Use NVIDIA Runtime (Often automatic with `nvidia-container-toolkit`):**
+    The toolkit typically configures Docker automatically. If not, you might need to edit `/etc/docker/daemon.json` and ensure the NVIDIA runtime is set as default or available, then restart Docker:
+    ```json
+    // Example /etc/docker/daemon.json
+    // {
+    //     "default-runtime": "nvidia",
+    //     "runtimes": {
+    //         "nvidia": {
+    //             "path": "nvidia-container-runtime",
+    //             "runtimeArgs": []
+    //         }
+    //     }
+    // }
+    ```
+    Then `sudo systemctl restart docker`.
+
+---
+
+### Step 5: Final Verification
+
+After all installations and configurations:
+
+1.  **Check `nvidia-smi` inside the LXC container again:**
+    ```bash
+    # Inside LXC Container
+    nvidia-smi
+    ```
+    Output should be similar to:
+    ```
+    dustin@plex:~$ nvidia-smi
+    Thu May  8 00:09:49 2025       
+    +-----------------------------------------------------------------------------------------+
+    | NVIDIA-SMI 570.144                Driver Version: 570.144        CUDA Version: 12.8     |
+    |-----------------------------------------+------------------------+----------------------+
+    | GPU  Name                 Persistence-M | Bus-Id          Disp.A | Volatile Uncorr. ECC |
+    | Fan  Temp   Perf          Pwr:Usage/Cap |           Memory-Usage | GPU-Util  Compute M. |
+    |                                         |                        |               MIG M. |
+    |=========================================+========================+======================|
+    |   0  NVIDIA GeForce RTX 3060        Off |   00000000:D8:00.0 Off |                  N/A |
+    |  0%   59C    P0             33W /  170W |       0MiB /  12288MiB |      3%      Default |
+    |                                         |                        |                  N/A |
+    +-----------------------------------------+------------------------+----------------------+
+                                                                                           
+    +-----------------------------------------------------------------------------------------+
+    | Processes:                                                                              |
+    |  GPU   GI   CI              PID   Type   Process name                        GPU Memory |
+    |        ID   ID                                                               Usage      |
+    |=========================================================================================|
+    |  No running processes found                                                             |
+    +-----------------------------------------------------------------------------------------+
+    dustin@plex:~$ 
+    ```
+
+2.  **Test a Docker container with GPU access:**
+    ```bash
+    # Inside LXC Container
+    docker run --rm --gpus all nvidia/cuda:12.5.0-base-ubuntu22.04 nvidia-smi
+    # Replace 12.5.0-base-ubuntu22.04 with a relevant CUDA image.
+    ```
+    This command should pull a CUDA-enabled Docker image and run `nvidia-smi` inside it, demonstrating that Docker containers can now access the GPU.
+
+**Conclusion:**
+With these steps, the NVIDIA GPU is successfully passed through from the Proxmox VE host to an LXC container, and the NVIDIA Container Toolkit is installed, enabling Docker containers within the LXC to leverage GPU acceleration. This setup is significantly more resource-efficient than using a full VM for GPU-accelerated Docker workloads.
+
+---
