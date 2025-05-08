@@ -252,3 +252,98 @@ After all installations and configurations:
 With these steps, the NVIDIA GPU is successfully passed through from the Proxmox VE host to an LXC container, and the NVIDIA Container Toolkit is installed, enabling Docker containers within the LXC to leverage GPU acceleration. This setup is significantly more resource-efficient than using a full VM for GPU-accelerated Docker workloads.
 
 ---
+ADDED 5/8/2025
+Okay, here's the section on NVIDIA Persistence Mode, formatted in Markdown for your guide.
+
+---
+
+## Optional: Enable NVIDIA GPU Persistence Mode on Proxmox VE Host
+
+NVIDIA Persistence Mode keeps the NVIDIA driver loaded in memory even when no applications are actively using the GPU. This can sometimes improve reliability and reduce initialization latency for applications (like Plex) that need to access the GPU, especially in virtualized or containerized environments. It's generally safe to enable and can be beneficial.
+
+**Applies to:** Proxmox VE Host (where the physical NVIDIA GPU is installed)
+
+### 1. Check Current Persistence Mode Status
+
+Open a shell on your Proxmox VE host (as `root` or using `sudo`):
+
+```bash
+nvidia-smi -q | grep "Persistence Mode"
+```
+
+*   If it outputs `Persistence Mode              : Enabled`, then it's already active, and no further action is needed.
+*   If it outputs `Persistence Mode              : Disabled`, you can proceed to enable it.
+
+### 2. Enable Persistence Mode
+
+To enable persistence mode for all NVIDIA GPUs in the system:
+
+```bash
+sudo nvidia-smi -pm 1
+```
+
+*   `-pm 1`: Sets persistence mode to `1` (Enabled).
+    *   To disable it later, you would use `sudo nvidia-smi -pm 0`.
+
+### 3. Verify Persistence Mode is Enabled
+
+Run the check command again:
+
+```bash
+nvidia-smi -q | grep "Persistence Mode"
+```
+The output should now show `Persistence Mode              : Enabled`.
+
+### Making Persistence Mode Survive Reboots
+
+The `nvidia-smi -pm 1` command enables persistence mode for the current session, but it might not always persist across reboots of the Proxmox VE host by default, depending on your system's init scripts or services.
+
+**Common methods to ensure it persists (choose one):**
+
+*   **NVIDIA Persistence Daemon (Recommended if available):**
+    Some NVIDIA driver installations include a persistence daemon service.
+    1.  Check if the service exists:
+        ```bash
+        sudo systemctl status nvidia-persistenced
+        ```
+    2.  If it exists and is inactive/disabled, enable and start it:
+        ```bash
+        sudo systemctl enable nvidia-persistenced
+        sudo systemctl start nvidia-persistenced
+        ```
+    This service is specifically designed to manage persistence mode across reboots.
+
+*   **Systemd Service (Manual Creation):**
+    If the `nvidia-persistenced` service isn't available, you can create a simple systemd service.
+    1.  Create a service file, e.g., `/etc/systemd/system/nvidia-persistence.service`:
+        ```bash
+        sudo nano /etc/systemd/system/nvidia-persistence.service
+        ```
+    2.  Paste the following content:
+        ```ini
+        [Unit]
+        Description=NVIDIA Persistence Mode
+        After=syslog.target network-online.target
+
+        [Service]
+        Type=oneshot
+        RemainAfterExit=yes
+        ExecStart=/usr/bin/nvidia-smi -pm 1
+        ExecStop=/usr/bin/nvidia-smi -pm 0
+
+        [Install]
+        WantedBy=multi-user.target
+        ```
+    3.  Enable and start the service:
+        ```bash
+        sudo systemctl daemon-reload
+        sudo systemctl enable nvidia-persistence.service
+        sudo systemctl start nvidia-persistence.service
+        ```
+
+*   **Startup Script (Older Method, Less Preferred):**
+    Adding `nvidia-smi -pm 1` to a startup script like `/etc/rc.local` (if your system uses it) is another option, but systemd services are generally preferred for modern Linux systems.
+
+**Note:** Enabling persistence mode usually has minimal overhead and is often a "set and forget" configuration that can help with GPU stability for passthrough or container usage.
+
+---
