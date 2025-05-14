@@ -1,0 +1,112 @@
+# the.wtf.center - Network Configuration v1.0
+
+Recent efforts focused on stabilizing and formalizing the network. This involved simplifying physical connections (removing ~40 patch cables) and replacing a larger 18-port managed switch with a more focused 6-port smart switch. The primary goal is to segregate the network into production (critical devices, WiFi via Omada) and testing/server environments.
+
+---
+
+## VLAN Configuration
+
+*   **VLAN 11:** Admin Network
+*   **VLAN 14:** Wife's Personal Network
+*   **VLAN 20:** Servers
+*   **VLAN 30:** IoT Devices
+*   **VLAN 44:** Intruders Network (Guest WiFi)
+*   **VLAN 99:** My Personal Network
+
+---
+
+## Core Hardware
+
+*   **Firewall/Router:** SuperMicro X10SLH-N6-ST031 1U (Bare Metal OPNsense)
+*   **WAN Gateway:** BGW-300 Fiber Gateway (*Planned: WAS-110*)
+*   **Primary Switch:** MokerLink 2G040210GSM (6-Port 2.5GbE Smart Switch)
+*   **Server/NAS Switch:** MokerLink (8-Port 10GbE Unmanaged Switch)
+*   **Omada Switch:** TP-Link TL-SG2008 V3 (8-Port Gigabit Smart) (*Planned: TP-Link TL-SG2210P V3 for PoE*)
+*   **Wireless AP:** TP-Link EAP650 (Omada WiFi 6 AX3000)
+*   **NAS:** UGreen DXP4800+ (4x12TB HDDs in RAID)
+
+---
+
+## Port Mappings & Connections
+
+### 1. MokerLink 2G040210GSM (6-Port 2.5GbE Smart Switch - "Core Splitter")
+*   **Port 1:** TP-Link EAP650 (WiFi AP)
+*   **Port 2:** Switch (Solar Company Hardware)
+*   **Port 3:** Dell R640 Server (`eno1np0`)
+*   **Port 4:** Wall passthrough to Personal Unmanaged Switch (My Office)
+*   **Port 5:** OPNsense (`ix3` NIC - LAN Interface)
+*   **Port 6:** Uplink to MokerLink 10GbE Unmanaged Switch
+
+### 2. MokerLink (8-Port 10GbE Unmanaged Switch - "Server/NAS Aggregator")
+*   **Port 1:** SuperMicro 1U Server (OOB Management - IPMI)
+*   **Port 2:** Dell R640 1U Server (OOB Management - iDRAC)
+*   **Port 3:** Connection to Wife's Personal VLAN (endpoint TBD)
+*   **Port 4:** Local Access Port (Temporary/Troubleshooting)
+*   **Port 5:** UGreen DXP4800+ NAS (10GbE)
+*   **Port 6:** Downlink from MokerLink 6-Port Smart Switch (Port 6)
+*   **Port 7:** *Empty*
+*   **Port 8:** Dell R640 Server (`eno2np1`)
+
+### 3. TP-Link TL-SG2008 V3 (8-Port Gigabit Smart - "Omada Network")
+*   **Ports 1-8:** Currently Open / Unused
+
+---
+
+## Immediate Future Plans (Network Refinement)
+
+1.  **MokerLink 6-Port (Core):**
+    *   `Port 1` -> Omada Switch (`Port 1` - Uplink)
+2.  **MokerLink 10GbE (Server/NAS):**
+    *   `Port 3` -> Re-purpose (destination TBD, currently Wife's VLAN direct access).
+3.  **Omada TL-SG2008 V3 / TL-SG2210P (Omada Network):**
+    *   `Port 1`: Uplink from MokerLink 6-Port (`Port 1`).
+    *   `Port 2`: Unmanaged switch for Wife's personal devices (VLAN 14).
+    *   `Port 3`: TP-Link EAP650 (VLANs 11, 14, 30, 44, 99).
+    *   `Port 4`: Nvidia Shield (VLAN TBD).
+
+---
+
+## Distant Future Plans (Learning & Expansion)
+
+1.  **True Network Segregation:** Direct OPNsense connections to both MokerLink 6-port (Test/Server) and Omada switch (Production/Critical) using separate NICs.
+2.  **Link Aggregation (LAGG/LACP):** Implement for increased bandwidth/resiliency to servers/NAS.
+3.  **Advanced Networking:** Deepen understanding of Layer 2/3 concepts, IGMP Snooping, etc.
+
+---
+
+## Key Lessons Learned
+
+1.  **VLAN Tagging Strategy:**
+    *   **Non-VLAN-aware devices:** Assign to a VLAN by setting the switch port to *untagged* for that VLAN.
+    *   **VLAN-aware devices:** *Tag* all relevant VLANs on the switch port. If the device requires a "native" or "untagged" VLAN for its management, set it to an unused VLAN ID on the switch port and configure the device accordingly.
+2.  **Proxmox VLANs:** Requires a VLAN-aware NIC & bridge setup.
+    *   One NIC/bridge on an untagged Admin VLAN (static IP for Proxmox host).
+    *   Second NIC/bridge (VLAN-aware, no host IP) with all necessary VLANs tagged, for VMs/LXCs.
+3.  **PVID:** Always ensure the Port VLAN ID (PVID) on a switch port matches the intended untagged VLAN.
+4.  **Static IPs:** Prefer OPNsense DHCP static mappings over device-configured static IPs for easier management and recovery.
+5.  **Segregation is Key:** Separate Production and Testing networks are essential for a stable homelab.
+
+---
+
+## OPNsense: VLANs Across Multiple LAN NICs (Bridging)
+
+**Goal:** Create distinct "Production" and "Testing" LAN segments using two physical NICs on OPNsense (`ix3`, `ix5`), while allowing inter-VLAN routing controlled by OPNsense.
+
+**Method:**
+1.  **VLAN Creation:** For each required VLAN (e.g., VLAN 11), create it on *both* parent physical interfaces:
+    *   `vlan11onix3` (Parent: `ix3`)
+    *   `vlan11onix5` (Parent: `ix5`)
+    *   Repeat for all VLANs (14, 20, 30, 44, 99).
+2.  **Bridge Creation:** In OPNsense (`Interfaces > Other Types > Bridge`):
+    *   Create a bridge for each VLAN pair (e.g., `vlan11bridge`).
+    *   Add the corresponding VLAN interfaces as members (e.g., `vlan11onix3` and `vlan11onix5` to `vlan11bridge`).
+3.  **Interface Assignment & Configuration:**
+    *   Assign the newly created bridge (e.g., `vlan11bridge`) as a new interface in OPNsense.
+    *   Disable/remove IP configurations from the individual VLAN-on-physical-NIC interfaces.
+    *   Configure the static IP, DHCP server, and other settings on the *bridge interface*.
+4.  **Firewall & DNS:**
+    *   Ensure DNS Resolver/Forwarder is listening on the bridge interfaces.
+    *   Create appropriate firewall rules for traffic to/from/across the bridge interfaces (e.g., allow bridge to WAN).
+
+**Outcome:** Traffic on VLAN 11 arriving at OPNsense via `ix3` can be routed to devices on VLAN 11 connected via `ix5` (and other VLANs as per firewall rules), effectively extending the VLAN across two physical LAN segments.
+*(Initial plan was to use this for full Prod/Test split, but currently, both NICs effectively feed into the main switch path. Long-term goal is to physically separate these paths post-OPNsense.)*
