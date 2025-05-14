@@ -215,4 +215,3 @@ Access the LXC (console or SSH) and check:
 ls -l /mnt/plex-media
 ```
 The NAS files should be listed.
-```
