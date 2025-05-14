@@ -12,7 +12,7 @@
 
 ## The Journey So Far: 91 Days
 
-A lot can happen when you are autistic and find a new hyperfocus. This is the story of mine.
+A lot can happen when you are autistic and find a new hyperfocus. This is the story of the.wtf.center.
 
 On **February 12, 2025**, I didn't really know what a NAS (Network Attached Storage) was. I was juggling about 5TB of data with Google, a couple of terabytes with Dropbox, and probably another 5TB scattered across various other cloud platforms, all incurring monthly fees. My initial thought was simple: consolidate and cut costs by choosing just one cloud provider.
 
