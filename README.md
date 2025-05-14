@@ -1,7 +1,3 @@
-Absolutely! Here's that lab introduction formatted in Markdown, aiming for a clean and readable style for your documentation.
-
----
-
 # the.wtf.center - Home Lab Documentation
 
 ```
