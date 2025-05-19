@@ -44,13 +44,6 @@ This guide details setting up Split-DNS on OPNsense using Unbound DNS to resolve
     *   Click **Save**.
 4.  After adding all overrides, click **Apply changes**.
 
-**(Optional) Domain Override:**
-To force all queries for `yourdomain.com` to be resolved locally by Unbound:
-1.  Under **Domain Overrides**, click **+ Add**.
-2.  **Domain:** `yourdomain.com`.
-3.  **IP Address:** `127.0.0.1`.
-4.  **Save** and **Apply changes**.
-
 ### 3. Configure Client DNS (via DHCP)
 
 1.  Navigate to **Services > DHCPv4 > [Your LAN Interface]**.
@@ -63,9 +56,13 @@ To force all queries for `yourdomain.com` to be resolved locally by Unbound:
 
 1.  On a LAN client (renew DHCP lease if needed):
     ```bash
-    nslookup service.yourdomain.com
+    dig @[your firewallip] yourdomain.com
     ```
-2.  Verify it resolves to the internal IP and lists OPNsense as the server.
+
+    ``bash
+    dig @8.8.8.8 yourdomain.com
+    ```
+2.  Verify the first resolves to your local IP and the secone resolves to your public IP.
 3.  Access the service via its FQDN in a browser (ensure DoH is off in that browser for testing).
 
 ### 5. (Optional) Firewall Rules to Enforce Local DNS
