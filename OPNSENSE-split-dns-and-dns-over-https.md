@@ -59,7 +59,7 @@ This guide details setting up Split-DNS on OPNsense using Unbound DNS to resolve
     dig @[your firewallip] yourdomain.com
     ```
 
-    ``bash
+    ```bash
     dig @8.8.8.8 yourdomain.com
     ```
 2.  Verify the first resolves to your local IP and the secone resolves to your public IP.
