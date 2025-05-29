@@ -77,11 +77,18 @@ rclone copy /volume2/media/movies Seedbox:/home14/theasdm/movies-backup \
 ### 4. Transfer: Seedbox to NAS (Example)
 
 ```bash
-rclone copy Seedbox:/home14/theasdm/movies-backup /volume2/media/movies \
-    --transfers=8 \
-    --checkers=8 \
+rclone copy seexbox:movies-backup /mnt/media-storage/media/movies \
+    --transfers=2 \
+    --checkers=6 \
+    --bwlimit 50M \
+    --checksum \
     --progress \
-    --stats=10s
+    --retries 3 \
+    --retries-sleep 30s \
+    --low-level-retries 10 \
+    --stats 1m \
+    -vv --log-file=rclone-resume-$(date +%Y%m%d-%H%M%S).log
+
 ```
 *   Similar to the above, but direction is reversed.
 *   `--stats=10s`: Print statistics every 10 seconds.
