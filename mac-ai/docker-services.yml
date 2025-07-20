@@ -1,0 +1,63 @@
+# docker-compose.yml for your Mac
+# Save this as docker-compose-mac.yml on your Mac
+
+version: '3.8'
+
+services:
+  # MLX Text Generation Service
+  mlx-service:
+    image: python:3.11-slim
+    container_name: mlx-service
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./mlx-service:/app
+      - /tmp/.X11-unix:/tmp/.X11-unix:rw
+    working_dir: /app
+    environment:
+      - PYTHONUNBUFFERED=1
+    command: >
+      bash -c "
+        pip install mlx-lm flask torch &&
+        python server.py
+      "
+    restart: unless-stopped
+    network_mode: host
+
+  # Stable Diffusion Service  
+  diffusion-service:
+    image: python:3.11-slim
+    container_name: diffusion-service
+    ports:
+      - "8001:8001"
+    volumes:
+      - ./diffusion-service:/app
+      - ~/.cache/huggingface:/root/.cache/huggingface
+    working_dir: /app
+    environment:
+      - PYTHONUNBUFFERED=1
+      - PYTORCH_ENABLE_MPS_FALLBACK=1
+    command: >
+      bash -c "
+        pip install torch torchvision diffusers accelerate transformers flask pillow &&
+        python server.py
+      "
+    restart: unless-stopped
+    network_mode: host
+
+  # API Gateway for all Mac services
+  mac-gateway:
+    image: python:3.11-slim
+    container_name: mac-gateway
+    ports:
+      - "9000:9000"
+    volumes:
+      - ./gateway:/app
+    working_dir: /app
+    command: >
+      bash -c "
+        pip install fastapi uvicorn httpx &&
+        python gateway.py
+      "
+    restart: unless-stopped
+    network_mode: host
